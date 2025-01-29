@@ -1,9 +1,9 @@
-import java.util.concurrent.locks.ReentrantLock;
+package Runway;
 
-import static PlanesBehavoir.PlanesArrival.counter;
+import static Runway.Main.count;
+
 
 public class Gateway extends Resources implements Runnable{
-    private int count;
     private final Resources rec;
     Gateway(){
         this.rec=new Resources();
@@ -12,10 +12,11 @@ public class Gateway extends Resources implements Runnable{
     }
     public void run(){
         System.out.println("Thread "+Thread.currentThread().getName()+" Is Running");
-        System.out.println("Plane with ID: "+rec.getPlane(rec.getAccess())+" want to land");
+        System.out.println("Plane with ID: "+rec.getPlane(count)+" want to land");
+        System.out.println(count);
         try{
-            if(count==0){
-                count++;
+            if(rec.getGatewayStatus()==0){
+                rec.setGatewayStatus(1);
             }
                 landing();
                 departing();
@@ -27,7 +28,7 @@ public class Gateway extends Resources implements Runnable{
         synchronized (rec) {
             if (!runwayfree()) {
                 try {
-                    System.out.println("Plane with ID: " + rec.getPlane(rec.getAccess()) + " Waiting to land");
+                    System.out.println("Plane with ID: " + rec.getPlane(count) + " Waiting to land");
                     rec.wait(10);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -40,9 +41,9 @@ public class Gateway extends Resources implements Runnable{
                     e.printStackTrace();
                 }
                 rec.pop(rec.getAccess());
-                System.out.println("Plane with ID: " + rec.getPlane(rec.getAccess()) + " Obtain access to land");
-                System.out.println("Plane with ID: " + rec.getPlane(rec.getAccess()) + " Landing");
-                count ++;
+                System.out.println("Plane with ID: " + rec.getPlane(count) + " Obtain access to land");
+                System.out.println("Plane with ID: " + rec.getPlane(count) + " Landing");
+                rec.setGatewayStatus(2);
                 rec.notify();
             }
         }
@@ -52,7 +53,7 @@ public class Gateway extends Resources implements Runnable{
         synchronized (rec) {
             if (runwayfree()) {
                 try {
-                    System.out.println("Plane with ID: " + rec.getPlane(rec.getAccess()) + " Waiting to leave");
+                    System.out.println("Plane with ID: " + rec.getPlane(count) + " Waiting to leave");
                     rec.wait(10);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -65,18 +66,18 @@ public class Gateway extends Resources implements Runnable{
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                System.out.println("Plane with ID: " + rec.getPlane(rec.getAccess()) + " Obtain access to depart");
-                System.out.println("Plane with ID: " + rec.getPlane(rec.getAccess()) + " Leaving");
-                count--;
+                System.out.println("Plane with ID: " + rec.getPlane(count) + " Obtain access to depart");
+                System.out.println("Plane with ID: " + rec.getPlane(count) + " Leaving");
+                rec.setGatewayStatus(1);
                 rec.notify();
-                System.out.println(count);
+                System.out.println(count +" current index");
                 rec.resetAccess();
-                System.out.println(count);
+                System.out.println(count+ " current index");
             }
         }
     }
 
     Boolean runwayfree(){
-        return count==1;
+        return rec.getGatewayStatus()==1;
     }
 }

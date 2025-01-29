@@ -1,3 +1,5 @@
+package Runway;
+
 import java.util.Random;
 
 public class Resources {
@@ -81,7 +83,7 @@ public class Resources {
         return access;
     }
 
-    void setGatewayStatus(int status){
+    synchronized void setGatewayStatus(int status){
         if(status==2 || status==1)
                 GatewayStatus=status;
         else
