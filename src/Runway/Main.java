@@ -11,6 +11,7 @@ public class Main {
                 PlanesThread[i]=new Thread(new Gateway(i, shared), "Thread "+i);
             }
             //Deadlock preventive measure
+
             // put the setPlanesInfo inside the class creation so all other threads have the same resources with
             // if the resource was shared all the threads will have the same access to every function or method which make them collide so then it becomes each thread is waiting for an action to happen and then the action never happen
 

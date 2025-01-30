@@ -12,7 +12,7 @@ public class Resources {
     //0 for availability 1 for occupation
     private final int passangers;
     private final String[] Gates;
-    Semaphore semaphore=new Semaphore(3,true);
+    Semaphore semaphore=new Semaphore(3, true);
 
     Resources(){
         PlanesQ= new int[6];
@@ -74,6 +74,7 @@ public class Resources {
                 break;
             }
         }
+
     }
 
     void Plaindepart(int index){
@@ -87,29 +88,17 @@ public class Resources {
 
     //Plane Status functionalities
 
-    void SetPlaneStatus(int index,String Status){this.PlanesStatus[index]=Status;}
+    synchronized void SetPlaneStatus(int index,String Status){this.PlanesStatus[index]=Status;}
 
-    String getSpecificPlaneStatus(int index){return PlanesStatus[index];}
+    synchronized String getSpecificPlaneStatus(int index){return PlanesStatus[index];}
     String[] getPlanesStatus(){return PlanesStatus;}
 
 
     //Gates Functions
-    void AssignGate(int index) throws InterruptedException {
-        semaphore.acquire();
-        synchronized (this){
-            for (int i=0; i<Gates.length; i++){
-                if (getGate(i)==null){
-                    setGate(i, getSpecificPlane(index));
-                    break;
-                }
-            }
-
-        }
-    }
 
     int getGateNum(int index){
-        for(int i=0; i<Gates.length; i++){
-            if((Gates[i] != null && Gates[i].equals(getSpecificPlane(index)))){
+        for(int i=0; i<getGates().length; i++){
+            if((getGate(i) != null && getGate(i).equals(getSpecificPlane(index)))){
                 return i+1;
             }
         }
@@ -120,16 +109,8 @@ public class Resources {
 
     void setGate(int index, String gate){this.Gates[index]=gate;}
 
-    void OpenGate(int index) {
-        for (int i = 0; i < Gates.length; i++) {
-            if (Gates[i] == getSpecificPlane(index)) {
-                Gates[i] = null;
-                break;
-            }
-        }
-        semaphore.release();
-    }
 
+    String [] getGates(){return Gates;}
 //Runway functions
 
     synchronized void setRunwayStatus(int status){

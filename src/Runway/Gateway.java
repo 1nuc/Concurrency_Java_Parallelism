@@ -24,6 +24,7 @@ public class Gateway extends Resources implements Runnable{
                 }
             }
             landing();
+            new GatesOperations(index, rec).run();
             departing();
             } catch (Exception e) {
             throw new RuntimeException(e);
@@ -56,27 +57,13 @@ public class Gateway extends Resources implements Runnable{
                 rec.notifyAll();
                 Runwaylock.unlock();
             }
-            //notes for tomorrow
-            // watch some videos about semaphore operations
-            // you should call the assign gate function inside the Plain land function
-            // where using the Q you can track which planes first landed so you can assign them directly to another Threads
-            // to start the process for the gates
-            if(canCoast()|| GateStatus()) {
-                try {
-                    Thread thread = new Thread(new GatesOperations(index, rec));
-                    rec.AssignGate(index);
-                    thread.start();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
         }
     }
 
 
     void departing(){
         synchronized (rec) {
-            if (!canDepart()) {
+            while (!canDepart()) {
                 try {
                     System.out.println(Thread.currentThread().getName()+": "+"Plane with ID: " + rec.getSpecificPlane(index) + " Waiting to leave");
                     rec.wait(10);
@@ -84,16 +71,22 @@ public class Gateway extends Resources implements Runnable{
                     e.printStackTrace();
                 }
             }
-
             try {
                 Runwaylock.lock();
+                int gateNum = rec.getGateNum(index);
+                for (int i = 0; i < rec.getGates().length; i++) {
+                    if (rec.getGate(i) != null && rec.getGate(i).equals(rec.getSpecificPlane(index))) {
+                        rec.setGate(i, null);
+                        break;
+                    }
+                }
+                rec.semaphore.release(); // Release semaphore here
+                System.out.println("Available Gates after release: " + rec.semaphore.availablePermits());
                 Thread.sleep(1000);
                 System.out.println(Thread.currentThread().getName()+": "+"Plane with ID: " + rec.getSpecificPlane(index) + " Obtain access to depart");
                 System.out.println(Thread.currentThread().getName()+": "+"Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
-                rec.setRunwayStatus(1);
                 rec.Plaindepart(index);
                 rec.SetPlaneStatus(index,"Depart");
-                rec.OpenGate(index);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }finally{
@@ -106,6 +99,7 @@ public class Gateway extends Resources implements Runnable{
         String status = rec.getSpecificPlaneStatus(index);
         return status != null && status.equals("Landed");
     }
+
     boolean canDepart() {
         String status = rec.getSpecificPlaneStatus(index);
         return status != null && status.equals("Assigned to Gate "+rec.getGateNum(index));
@@ -116,7 +110,7 @@ public class Gateway extends Resources implements Runnable{
     }
 
     boolean GateStatus(){
-        return rec.getGateNum(index)==0;
+        return rec.semaphore.availablePermits()==0;
     }
 
 }
