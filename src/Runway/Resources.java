@@ -10,23 +10,24 @@ public class Resources {
     private String[] PlanesStatus;
     private int GatewayStatus;
     //0 for availability 1 for occupation
-    private final int passangers;
     private final String[] Gates;
+    protected final Object LandingObject=new Object();
+    protected final Object GatesObject=new Object();
+    protected final Object PassengerObject=new Object();
+    protected final Object DepartingObject=new Object();
+
     Semaphore semaphore=new Semaphore(3, true);
 
     Resources(){
         PlanesQ= new int[6];
         PlanesID= new String[6];
-        passangers=50;
         Gates=new String[3];
         PlanesStatus=new String[6];
         // Setting the number of planes to  6
     }
 
     //Passenger functions
-    int getPassangers(){
-        return passangers;
-    }
+        //Boarding--
 
 
     //A function to make ensure IDs and queues uniqueness

@@ -23,20 +23,23 @@ public class Gateway extends Resources implements Runnable{
                     rec.setRunwayStatus(1);
                 }
             }
-            landing();
-            new GatesOperations(index, rec).run();
-            departing();
             } catch (Exception e) {
             throw new RuntimeException(e);
         }
+//        Thread thread=new Thread(new GatesOperations(index, rec), "Thread "+index+"-Planes Operation");
+        landing();
+        new GatesOperations(index, rec);
+        //        thread.start();
+        //Potential Improvement include a thread to simulate the process for the Gates Operations
+        departing();
     }
 
     void landing(){
-        synchronized (rec) {
-            while (!runwayfree()) {
+        synchronized (rec.LandingObject) {
+            while (!runwayfree() || GateStatus()) {
                 try {
                     System.out.println(Thread.currentThread().getName()+": "+"Plane with ID: " + rec.getSpecificPlane(index) + " Waiting to land");
-                    rec.wait();
+                    rec.LandingObject.wait();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -53,27 +56,26 @@ public class Gateway extends Resources implements Runnable{
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            finally{
-                rec.notifyAll();
-                Runwaylock.unlock();
+            if(rec.semaphore.availablePermits()!=0){
+                    Runwaylock.unlock();
+                    rec.LandingObject.notifyAll();
             }
         }
     }
 
 
     void departing(){
-        synchronized (rec) {
+        synchronized (rec.DepartingObject) {
             while (!canDepart()) {
                 try {
                     System.out.println(Thread.currentThread().getName()+": "+"Plane with ID: " + rec.getSpecificPlane(index) + " Waiting to leave");
-                    rec.wait(10);
+                    rec.DepartingObject.wait();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
             try {
                 Runwaylock.lock();
-                int gateNum = rec.getGateNum(index);
                 for (int i = 0; i < rec.getGates().length; i++) {
                     if (rec.getGate(i) != null && rec.getGate(i).equals(rec.getSpecificPlane(index))) {
                         rec.setGate(i, null);
@@ -81,8 +83,8 @@ public class Gateway extends Resources implements Runnable{
                     }
                 }
                 rec.semaphore.release(); // Release semaphore here
-                System.out.println("Available Gates after release: " + rec.semaphore.availablePermits());
-                Thread.sleep(1000);
+                System.out.println(rec.semaphore.availablePermits()+" Gates Available");
+                Thread.sleep(500);
                 System.out.println(Thread.currentThread().getName()+": "+"Plane with ID: " + rec.getSpecificPlane(index) + " Obtain access to depart");
                 System.out.println(Thread.currentThread().getName()+": "+"Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
                 rec.Plaindepart(index);
@@ -90,20 +92,31 @@ public class Gateway extends Resources implements Runnable{
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }finally{
+                rec.DepartingObject.notifyAll();
                 Runwaylock.unlock();
-                rec.notifyAll();
             }
         }
     }
+
+
+
     boolean canCoast() {
         String status = rec.getSpecificPlaneStatus(index);
         return status != null && status.equals("Landed");
     }
 
-    boolean canDepart() {
+    boolean canDisembark() {
         String status = rec.getSpecificPlaneStatus(index);
         return status != null && status.equals("Assigned to Gate "+rec.getGateNum(index));
     }
+
+
+    boolean canDepart(){
+        String status = rec.getSpecificPlaneStatus(index);
+        return status != null && status.equals("Passengers Disembarked");
+
+    }
+
 
     Boolean runwayfree(){
         return rec.getRunwayStatus()==1;
@@ -112,5 +125,6 @@ public class Gateway extends Resources implements Runnable{
     boolean GateStatus(){
         return rec.semaphore.availablePermits()==0;
     }
+
 
 }
