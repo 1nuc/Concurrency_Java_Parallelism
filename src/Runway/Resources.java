@@ -2,6 +2,7 @@ package Runway;
 
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Resources {
 
@@ -15,8 +16,9 @@ public class Resources {
     protected final Object GatesObject=new Object();
     protected final Object PassengerObject=new Object();
     protected final Object DepartingObject=new Object();
+    protected static final ReentrantLock Runwaylock= new ReentrantLock();
 
-    Semaphore semaphore=new Semaphore(3, true);
+    CustomSemaphore semaphore=new CustomSemaphore(3);
 
     Resources(){
         PlanesQ= new int[6];
@@ -62,7 +64,7 @@ public class Resources {
     }
 
     String[] getPlanesID(){return PlanesID;}
-    String getSpecificPlane(int index){return PlanesID[index];}
+    synchronized String getSpecificPlane(int index){return PlanesID[index];}
 
     int[] getPlanesQ(){return PlanesQ;}
 
