@@ -2,6 +2,7 @@ package Runway;
 
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Resources {
@@ -10,14 +11,11 @@ public class Resources {
     private int[] PlanesQ;
     private String[] PlanesStatus;
     private int GatewayStatus;
-    //0 for availability 1 for occupation
     private final String[] Gates;
     protected final Object LandingObject=new Object();
     protected final Object GatesObject=new Object();
-    protected final Object PassengerObject=new Object();
+    protected final Object RunwayLock=new Object();
     protected final Object DepartingObject=new Object();
-    protected static final ReentrantLock Runwaylock= new ReentrantLock();
-
     CustomSemaphore semaphore=new CustomSemaphore(3);
 
     Resources(){
@@ -53,7 +51,6 @@ public class Resources {
             do {
                 newID = String.format("PL%04d", rand.nextInt(10000));
                 newQueue = rand.nextInt(6) + 1;
-                PlanesStatus[i]="Waiting";
             } while (isDuplicate(newID, newQueue));
             //the point of planesQ is to display the number or the order if the emergency plain has a fuel shortage to land
             // first if the two gates are already occupied
@@ -70,7 +67,7 @@ public class Resources {
 
 
 //functions created to keep track of the planes coming and departing for emergency once
-    void Plainland(int index){
+   synchronized void Plainland(int index){
         for (int i=0; i<PlanesID.length; i++){
             if(i ==index){
                 PlanesQ[i]=0;
@@ -79,6 +76,12 @@ public class Resources {
         }
 
     }
+
+    boolean LandingPrem(int index){
+        if(PlanesQ[index]==0)return true;
+        else return false;
+    }
+
 
     void Plaindepart(int index){
         for (int i=0; i<PlanesID.length; i++){
@@ -117,7 +120,7 @@ public class Resources {
 //Runway functions
 
     synchronized void setRunwayStatus(int status){
-        if(status==2 || status==1)
+        if(status==0 || status==1)
                 GatewayStatus=status;
         else
             throw new IllegalArgumentException("Invalid number entered status should be between 0 and 1");
