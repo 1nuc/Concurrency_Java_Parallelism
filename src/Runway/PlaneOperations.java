@@ -27,9 +27,9 @@ public class PlaneOperations extends Airplane implements Runnable {
            for (int i = 0; i < 50; i++) disembarkedPas();
            System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" 50 Passengers Disembarks from the plane");
            synchronized (rec.DepartingObject){
-                rec.SetPlaneStatus(index, "Passengers Disembarked");
-                rec.DepartingObject.notifyAll();
+                rec.Add_Planes_Departing_Queue(index);
                 System.out.println("Done");
+                rec.DepartingObject.notifyAll();
             }
 
     }

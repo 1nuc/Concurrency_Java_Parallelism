@@ -1,5 +1,6 @@
 package Runway;
 
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
@@ -9,21 +10,40 @@ public class Resources {
 
     private final String[] PlanesID;
     private int[] PlanesQ;
-    private String[] PlanesStatus;
     private int GatewayStatus;
     private final String[] Gates;
+    ArrayList<Integer> WaitingQueue;
+    ArrayList<Integer> DepartingQueue;
     protected final Object LandingObject=new Object();
-    protected final Object GatesObject=new Object();
+    protected final Object DepartLock=new Object();
     protected final Object RunwayLock=new Object();
     protected final Object DepartingObject=new Object();
     CustomSemaphore semaphore=new CustomSemaphore(3);
-
+    AtomicIndex atomicIndex=new AtomicIndex(-1);
     Resources(){
         PlanesQ= new int[6];
         PlanesID= new String[6];
         Gates=new String[3];
-        PlanesStatus=new String[6];
+
+        WaitingQueue=new ArrayList<>();
+        DepartingQueue=new ArrayList<>();
+
         // Setting the number of planes to  6
+    }
+
+    // Queues functionalities
+    void Add_Planes_Queue(int index){
+        WaitingQueue.add(index);
+    }
+    void Rem_Planes_Queue(int index){
+        WaitingQueue.remove(Integer.valueOf(index));
+    }
+
+    void Add_Planes_Departing_Queue(int index){
+        DepartingQueue.add(index);
+    }
+    void Rem_Planes_Departing_Queue(int index){
+        DepartingQueue.remove(Integer.valueOf(index));
     }
 
     //Passenger functions
@@ -82,6 +102,11 @@ public class Resources {
         else return false;
     }
 
+    boolean DepartingPrem(int index){
+        if(PlanesQ[index]==-1)return true;
+        else return false;
+    }
+
 
     void Plaindepart(int index){
         for (int i=0; i<PlanesID.length; i++){
@@ -92,12 +117,22 @@ public class Resources {
         }
     }
 
+    boolean AllPlainDepart(){
+        int count=0;
+        for(int i=0; i<PlanesQ.length; i++){
+            if(PlanesQ[i]==-1){
+                count++;
+            }
+        }
+        if(count==6){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
     //Plane Status functionalities
 
-    synchronized void SetPlaneStatus(int index,String Status){this.PlanesStatus[index]=Status;}
-
-    synchronized String getSpecificPlaneStatus(int index){return PlanesStatus[index];}
-    String[] getPlanesStatus(){return PlanesStatus;}
 
 
     //Gates Functions
