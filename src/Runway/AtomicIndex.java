@@ -25,4 +25,14 @@ public class AtomicIndex {
             lock.unlock();
         }
      }
+     public void reset(int value){
+        lock.lock();
+         try{
+             if(this.value==value){
+                 this.value=-1;
+             }
+         }finally{
+             lock.unlock();
+         }
+     }
 }

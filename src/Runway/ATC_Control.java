@@ -5,6 +5,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ATC_Control implements Runnable {
     private Resources rec;
+    private int index;
     ATC_Control(Resources shared){
         this.rec=shared;
     }
@@ -15,30 +16,40 @@ public class ATC_Control implements Runnable {
 
         while (!rec.AllPlainDepart()) {
             synchronized (rec.RunwayLock) {
-            int liveindex;
-                while ((liveindex = rec.atomicIndex.get()) == -1) {
-                    try {
-                        rec.RunwayLock.wait();// Small wait to reduce CPU usage
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
+                while ((index = rec.atomicIndex.get()) == -1) {
+                    if (rec.WaitingQueue.isEmpty() && rec.DepartingQueue.isEmpty()) {
+                        try {
+                            rec.RunwayLock.wait();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                    }
+                else if(!rec.WaitingQueue.isEmpty()){
+                        this.index = rec.WaitingQueue.getFirst();
+                        rec.atomicIndex.set(this.index);
+                    }
+                    else {
+                        this.index=rec.DepartingQueue.getFirst();
+                        rec.atomicIndex.set(index);
                     }
                 }
-                Land_Runway(liveindex);
+                if(!rec.WaitingQueue.isEmpty())Land_Runway();
 
+                if (rec.DepartingQueue.isEmpty())continue;
+                this.index=rec.DepartingQueue.getFirst();
+                if(rec.DepartingQueue.contains(index)) {
+                    Depart_Land();
+                }
             }
-        if (rec.DepartingQueue.isEmpty())continue;
-        synchronized (rec.DepartingObject) {
-            int departindex=rec.DepartingQueue.getFirst();
-            Depart_Land(departindex);
-            }
+
 
         }
 
         System.out.println("ATC: All planes have departed. ATC shutting down.");
     }
 
-    void Land_Runway(int index) {
+    void Land_Runway() {
             while (!runwayfree() || GateStatus() ) {
                 try {
                     System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Asking premission to land");
@@ -53,48 +64,47 @@ public class ATC_Control implements Runnable {
                 System.out.println(Thread.currentThread().getName() + ": Available Gates: " + rec.semaphore.availablePermits());
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain permission to land");
                 Thread.sleep(1000);
-                if (rec.semaphore.availablePermits() > 0) {
-                    rec.semaphore.Acquire();
-                    for (int i = 0; i < rec.getGates().length; i++) {
-                        if (rec.getGate(i) == null) {
-                            rec.setGate(i, rec.getSpecificPlane(index));
-                            System.out.println(Thread.currentThread().getName() + ": Plane- " + rec.getSpecificPlane(index) + " Assined Gate " + rec.getGateNum(index));
-                            rec.Plainland(index);
-                            break;
-                        }
-                    }
-                }
+                rec.Plainland(index);
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            }finally{
+                rec.lock.lock();
+                try {
+                    rec.condition.signalAll();
+                } finally {
+                    rec.lock.unlock();
+                }
             }
+
     }
 
 
 
-    void Depart_Land(int index) {
+    void Depart_Land() {
             while (!runwayfree()) {
                 try {
                     System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Waiting to leave");
-                    rec.DepartingObject.wait();
+                    rec.RunwayLock.wait();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
             try {
-                for (int i = 0; i < rec.getGates().length; i++) {
-                    if (rec.getGate(i) != null && rec.getGate(i).equals(rec.getSpecificPlane(index))) {
-                        System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Undock from gate "+rec.getGateNum(index));
-                        rec.setGate(i, null);
-                        break;
-                    }
-                }
                 Thread.sleep(500);
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain access to depart");
                 rec.Plaindepart(index);
 
+
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            rec.lock.lock();
+            try {
+                rec.condition.signalAll();
+            } finally {
+                rec.lock.unlock();
+            }
+
     }
 
 //

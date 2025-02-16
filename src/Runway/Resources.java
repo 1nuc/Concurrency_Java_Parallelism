@@ -14,10 +14,12 @@ public class Resources {
     private final String[] Gates;
     ArrayList<Integer> WaitingQueue;
     ArrayList<Integer> DepartingQueue;
-    protected final Object LandingObject=new Object();
+//    protected final Object LandingObject=new Object();
     protected final Object DepartLock=new Object();
     protected final Object RunwayLock=new Object();
-    protected final Object DepartingObject=new Object();
+//    protected final Object DepartingObject=new Object();
+    ReentrantLock lock=new ReentrantLock();
+    Condition condition= lock.newCondition();
     CustomSemaphore semaphore=new CustomSemaphore(3);
     AtomicIndex atomicIndex=new AtomicIndex(-1);
     Resources(){
@@ -25,8 +27,8 @@ public class Resources {
         PlanesID= new String[6];
         Gates=new String[3];
 
-        WaitingQueue=new ArrayList<>();
-        DepartingQueue=new ArrayList<>();
+        WaitingQueue=new ArrayList<>(6);
+        DepartingQueue=new ArrayList<>(6);
 
         // Setting the number of planes to  6
     }
