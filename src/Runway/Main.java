@@ -14,6 +14,7 @@ public class Main {
             Thread ATC_Thread=new Thread(new ATC_Control(shared), "ATC_Thread");
             // Confirm that all threads have started
             ATC_Thread.start();
+
             for (int i = 0; i < PlanesThread.length; i++) {
                 System.out.println("Thread " + i + " state: " + PlanesThread[i].getState());
             }

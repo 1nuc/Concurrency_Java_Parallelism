@@ -17,7 +17,7 @@ public class ATC_Control implements Runnable {
         while (!rec.AllPlainDepart()) {
             synchronized (rec.RunwayLock) {
                 while ((index = rec.atomicIndex.get()) == -1) {
-                    if (rec.WaitingQueue.isEmpty() && rec.DepartingQueue.isEmpty()) {
+                    if (rec.WaitingQueue.isEmpty() && rec.DepartingQueue.isEmpty() || rec.UnderOperation){
                         try {
                             rec.RunwayLock.wait();
                         } catch (InterruptedException e) {
@@ -42,68 +42,67 @@ public class ATC_Control implements Runnable {
                     Depart_Land();
                 }
             }
-
-
         }
 
         System.out.println("ATC: All planes have departed. ATC shutting down.");
     }
 
     void Land_Runway() {
-            while (!runwayfree() || GateStatus() ) {
-                try {
-                    System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Asking premission to land");
-                    System.out.println(Thread.currentThread().getName() + ": " + "Checking Runway Status");
-                    rec.RunwayLock.wait();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+        while (!runwayfree() || GateStatus()) {
             try {
-                rec.setRunwayStatus(1);
-                System.out.println(Thread.currentThread().getName() + ": Available Gates: " + rec.semaphore.availablePermits());
-                System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain permission to land");
-                Thread.sleep(1000);
-                rec.Plainland(index);
+                System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Asking permission to land");
+                System.out.println(Thread.currentThread().getName() + ": " + "Checking Runway Status");
+                rec.RunwayLock.wait();
+                return;
             } catch (Exception e) {
-                throw new RuntimeException(e);
-            }finally{
-                rec.lock.lock();
-                try {
-                    rec.condition.signalAll();
-                } finally {
-                    rec.lock.unlock();
-                }
+                e.printStackTrace();
             }
-
-    }
-
-
-
-    void Depart_Land() {
-            while (!runwayfree()) {
-                try {
-                    System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Waiting to leave");
-                    rec.RunwayLock.wait();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            try {
-                Thread.sleep(500);
-                System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain access to depart");
-                rec.Plaindepart(index);
-
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        }
+        rec.RunwayLock.notifyAll();
+        try {
+            rec.setRunwayStatus(1);
+            System.out.println(Thread.currentThread().getName() + ": Available Gates: " + rec.semaphore.availablePermits());
+            System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain permission to land");
+            Thread.sleep(1000);
+            rec.Plainland(index);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
             rec.lock.lock();
             try {
                 rec.condition.signalAll();
             } finally {
                 rec.lock.unlock();
             }
+        }
+    }
+
+
+
+    void Depart_Land() {
+        while (!runwayfree()) {
+            try {
+                System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Waiting to leave");
+                rec.RunwayLock.wait();
+                rec.atomicIndex.reset(index);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            Thread.sleep(500);
+            System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain access to depart");
+            rec.Plaindepart(index);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        rec.lock2.lock();
+        try {
+            rec.condition2.signalAll();
+        } finally {
+            rec.lock2.unlock();
+        }
 
     }
 

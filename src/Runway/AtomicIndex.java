@@ -30,6 +30,8 @@ public class AtomicIndex {
          try{
              if(this.value==value){
                  this.value=-1;
+             }else{
+                 System.out.println("busy");
              }
          }finally{
              lock.unlock();

@@ -14,13 +14,14 @@ public class Resources {
     private final String[] Gates;
     ArrayList<Integer> WaitingQueue;
     ArrayList<Integer> DepartingQueue;
-//    protected final Object LandingObject=new Object();
-    protected final Object DepartLock=new Object();
     protected final Object RunwayLock=new Object();
-//    protected final Object DepartingObject=new Object();
     ReentrantLock lock=new ReentrantLock();
     Condition condition= lock.newCondition();
+    boolean UnderOperation;
+    ReentrantLock lock2=new ReentrantLock();
+    Condition condition2= lock2.newCondition();
     CustomSemaphore semaphore=new CustomSemaphore(3);
+    CustomSemaphore RefuellingSemaphore=new CustomSemaphore(1);
     AtomicIndex atomicIndex=new AtomicIndex(-1);
     Resources(){
         PlanesQ= new int[6];
@@ -83,13 +84,15 @@ public class Resources {
     }
 
     String[] getPlanesID(){return PlanesID;}
-    synchronized String getSpecificPlane(int index){return PlanesID[index];}
+    String getSpecificPlane(int index){return PlanesID[index];}
 
     int[] getPlanesQ(){return PlanesQ;}
 
+    int getSpecificPlaneQ(int index){return PlanesQ[index];}
+
 
 //functions created to keep track of the planes coming and departing for emergency once
-   synchronized void Plainland(int index){
+    void Plainland(int index){
         for (int i=0; i<PlanesID.length; i++){
             if(i ==index){
                 PlanesQ[i]=0;
@@ -100,12 +103,12 @@ public class Resources {
     }
 
     boolean LandingPrem(int index){
-        if(PlanesQ[index]==0)return true;
+        if(PlanesQ[index]==0 )return true;
         else return false;
     }
 
     boolean DepartingPrem(int index){
-        if(PlanesQ[index]==-1)return true;
+        if(PlanesQ[index]==-1 )return true;
         else return false;
     }
 
@@ -156,7 +159,7 @@ public class Resources {
     String [] getGates(){return Gates;}
 //Runway functions
 
-    synchronized void setRunwayStatus(int status){
+    void setRunwayStatus(int status){
         if(status==0 || status==1)
                 GatewayStatus=status;
         else
