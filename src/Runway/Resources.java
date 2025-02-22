@@ -17,7 +17,6 @@ public class Resources {
     protected final Object RunwayLock=new Object();
     ReentrantLock lock=new ReentrantLock();
     Condition condition= lock.newCondition();
-    boolean UnderOperation;
     ReentrantLock lock2=new ReentrantLock();
     Condition condition2= lock2.newCondition();
     CustomSemaphore semaphore=new CustomSemaphore(3);
@@ -104,7 +103,9 @@ public class Resources {
 
     boolean LandingPrem(int index){
         if(PlanesQ[index]==0 )return true;
-        else return false;
+        else{
+            return false;
+        }
     }
 
     boolean DepartingPrem(int index){

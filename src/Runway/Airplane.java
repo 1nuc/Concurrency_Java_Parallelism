@@ -5,6 +5,7 @@ import java.sql.SQLOutput;
 
 public class Airplane  implements Runnable{
         public static Resources rec;
+        boolean UnderOperation;
         public final int index;
         private Thread thread;
         Airplane(int index, Resources sharedRec){
@@ -14,13 +15,20 @@ public class Airplane  implements Runnable{
         public void run() {
             System.out.println("Thread " + Thread.currentThread().getName() + " Is: " + Thread.currentThread().getState());
             System.out.println("Thread " + Thread.currentThread().getName() + " Plane: " + rec.getSpecificPlane(index) + " is Added to the Waiting Queue");
-                rec.atomicIndex.set(index);
+
+            rec.Add_Planes_Queue(index);
             synchronized (rec.RunwayLock) {
-                rec.Add_Planes_Queue(index);
                 rec.RunwayLock.notifyAll();
             }
             thread = new Thread(new PlaneOperations(index, rec), "Thread " + index + "-Planes Operation");
             landing();
+                if(UnderOperation){
+                    try {
+                        rec.RunwayLock.wait();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             departing();
 
         }
@@ -30,8 +38,8 @@ public class Airplane  implements Runnable{
                     rec.lock.lock();
                     while (!rec.LandingPrem(index)) {
                         try {
-                            rec.condition.await();
                             System.out.println(Thread.currentThread().getName() + " Plane: " + rec.getSpecificPlane(index) + " is Waiting for a permission to land ");
+                            rec.condition.await();
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             return;
@@ -73,8 +81,8 @@ public class Airplane  implements Runnable{
                 rec.lock2.lock();
                 while (!rec.DepartingPrem(index)) {
                     try {
-                        rec.condition2.await();
                         System.out.println(Thread.currentThread().getName() + " Plane: " + rec.getSpecificPlane(index) + " is Waiting for a permission to leave ");
+                        rec.condition2.await();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         return;
@@ -86,6 +94,7 @@ public class Airplane  implements Runnable{
                     rec.condition2.signalAll();
                     rec.lock2.unlock();
                 }
+                rec.Rem_Planes_Departing_Queue(index);
                 for (int i = 0; i < rec.getGates().length; i++) {
                     if (rec.getGate(i) != null && rec.getGate(i).equals(rec.getSpecificPlane(index))) {
                         System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Undock from gate "+rec.getGateNum(index));
@@ -94,11 +103,9 @@ public class Airplane  implements Runnable{
                     }
                 }
                 rec.semaphore.Release();
-                rec.Rem_Planes_Departing_Queue(index);
+                System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
                 synchronized (rec.RunwayLock) {
-                    rec.atomicIndex.reset(this.index);
                     rec.setRunwayStatus(0);
-                    System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
                     rec.RunwayLock.notifyAll();
                 }
         }

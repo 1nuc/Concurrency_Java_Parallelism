@@ -9,9 +9,8 @@ public class PlaneOperations extends Airplane implements Runnable {
 
     public void run() {
         try{
-            synchronized (rec.RunwayLock){
-                rec.UnderOperation=true;
-            }
+            UnderOperation=true;
+
             resetPassengers();
             PassengersDisembarking();
             CleaningAircraft();
@@ -89,8 +88,8 @@ public class PlaneOperations extends Airplane implements Runnable {
            System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" 50 Passengers Embark to the plane");
            synchronized (rec.RunwayLock){
                 rec.Add_Planes_Departing_Queue(index);
-                rec.UnderOperation=false;
-                rec.RunwayLock.notifyAll();
+                UnderOperation=false;
+                rec.RunwayLock.notify();
            }
     }
 
