@@ -5,7 +5,6 @@ import java.sql.SQLOutput;
 
 public class Airplane  implements Runnable{
         public static Resources rec;
-        boolean UnderOperation;
         public final int index;
         private Thread thread;
         Airplane(int index, Resources sharedRec){
@@ -16,26 +15,34 @@ public class Airplane  implements Runnable{
             System.out.println("Thread " + Thread.currentThread().getName() + " Is: " + Thread.currentThread().getState());
             System.out.println("Thread " + Thread.currentThread().getName() + " Plane: " + rec.getSpecificPlane(index) + " is Added to the Waiting Queue");
 
-            rec.Add_Planes_Queue(index);
+            rec.atomicIndex.set(index);
             synchronized (rec.RunwayLock) {
+                rec.Add_Planes_Queue(index);
+                rec.setStatus(index);
+                rec.ArrivalTime.set(index, System.currentTimeMillis());
                 rec.RunwayLock.notifyAll();
             }
             thread = new Thread(new PlaneOperations(index, rec), "Thread " + index + "-Planes Operation");
             landing();
-                if(UnderOperation){
-                    try {
-                        rec.RunwayLock.wait();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+            rec.lock2.lock();
+            try {
+                while(!rec.getStatus(index).equals("PassengerEmbarked")){
+                        rec.condition2.await();
                 }
-            departing();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }finally{
+                rec.condition2.signalAll();
+                rec.lock2.unlock();
+            }
+                departing();
 
         }
 
         void landing() {
                 try{
                     rec.lock.lock();
+                    rec.changeStatus(index, "WaitingToLand");
                     while (!rec.LandingPrem(index)) {
                         try {
                             System.out.println(Thread.currentThread().getName() + " Plane: " + rec.getSpecificPlane(index) + " is Waiting for a permission to land ");
@@ -63,13 +70,14 @@ public class Airplane  implements Runnable{
                         break;
                     }
                 }
+                rec.Rem_Planes_Queue(index);
+                rec.atomicIndex.reset(index);
+                rec.changeStatus(index, "Landed");
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Landing........");
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Landed Successfully");
                 System.out.println(Thread.currentThread().getName() + ": Plane- " + rec.getSpecificPlane(index) + " docking at Gate " + rec.getGateNum(index));
-                rec.Rem_Planes_Queue(index);
                 synchronized (rec.RunwayLock){
                     rec.setRunwayStatus(0);
-                    rec.atomicIndex.reset(this.index);
                     rec.RunwayLock.notifyAll();
                 }
                 thread.start();
@@ -103,9 +111,13 @@ public class Airplane  implements Runnable{
                     }
                 }
                 rec.semaphore.Release();
+                rec.atomicIndex.reset(index);
+                rec.changeStatus(index, "Departed");
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
                 synchronized (rec.RunwayLock) {
                     rec.setRunwayStatus(0);
+                    rec.DepartureTime.set(index, System.currentTimeMillis());
+                    rec.WaitingTime.set(index, rec.DepartureTime.get(index) - rec.ArrivalTime.get(index));
                     rec.RunwayLock.notifyAll();
                 }
         }

@@ -1,18 +1,29 @@
 package Runway;
 
-public class PlaneOperations extends Airplane implements Runnable {
-    private int passengers=50;
+import java.util.concurrent.locks.ReentrantLock;
 
+public class PlaneOperations extends Airplane implements Runnable {
+    private Thread PassangerThread;
+    protected int passengers=50;
+    protected Object PassengerLock=new Object();
+    protected boolean PassengerdisEmbarked=false;
+    protected boolean PassengerEmbarked=false;
     PlaneOperations(int index, Resources shared) {
         super(index, shared);
     }
 
     public void run() {
         try{
-            UnderOperation=true;
+            PassangerThread=new Thread(new Passengers(index, rec, this), "Passengers Thread "+index);
+            PassangerThread.start();
 
             resetPassengers();
             PassengersDisembarking();
+            try{
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             CleaningAircraft();
             RefillSupplies();
             Refuelling();
@@ -29,8 +40,15 @@ public class PlaneOperations extends Airplane implements Runnable {
            } catch (InterruptedException e) {
                throw new RuntimeException(e);
            }
-           for (int i = 0; i < 50; i++) disembarkedPas();
-           System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " 50 Passengers Disembarks from the plane");
+           synchronized (PassengerLock){
+               PassengerdisEmbarked=true;
+               PassengerLock.notifyAll();
+           }
+           try {
+               Thread.sleep(500);
+           } catch (InterruptedException e) {
+               throw new RuntimeException(e);
+           }
        }
 
     void CleaningAircraft() {
@@ -58,7 +76,7 @@ public class PlaneOperations extends Airplane implements Runnable {
     void Refuelling() {
         while(rec.RefuellingSemaphore.availablePermits()==0){
             try {
-                Thread.sleep(500);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -84,28 +102,26 @@ public class PlaneOperations extends Airplane implements Runnable {
            } catch (InterruptedException e) {
                throw new RuntimeException(e);
            }
-           for (int i = 0; i < 50; i++) embarkedPas();
-           System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" 50 Passengers Embark to the plane");
-           synchronized (rec.RunwayLock){
-                rec.Add_Planes_Departing_Queue(index);
-                UnderOperation=false;
-                rec.RunwayLock.notify();
+           synchronized (PassengerLock){
+               PassengerEmbarked=true;
+               PassengerLock.notifyAll();
            }
+           try {
+               Thread.sleep(1000);
+           } catch (InterruptedException e) {
+               throw new RuntimeException(e);
+           }
+
+            synchronized (rec.RunwayLock) {
+                rec.Add_Planes_Departing_Queue(index);
+                rec.changeStatus(index, "PassengerEmbarked");
+                rec.RunwayLock.notify();
+            }
     }
-
-
 
     synchronized void resetPassengers(){
         this.passengers=50;
     }
-    int getPassenger(){return passengers;}
 
-    void disembarkedPas() {
-        this.passengers--;
-    }
-
-    void embarkedPas(){
-        this.passengers++;
-    }
 
 }

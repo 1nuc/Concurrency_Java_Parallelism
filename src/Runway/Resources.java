@@ -1,12 +1,13 @@
 package Runway;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Resources {
+public class Resources{
 
     private final String[] PlanesID;
     private int[] PlanesQ;
@@ -22,20 +23,35 @@ public class Resources {
     CustomSemaphore semaphore=new CustomSemaphore(3);
     CustomSemaphore RefuellingSemaphore=new CustomSemaphore(1);
     AtomicIndex atomicIndex=new AtomicIndex(-1);
+    private String [] PlaneStatus;
+    public int PassengersBoarded;
+    List<Long> ArrivalTime=new ArrayList<>();
+    List<Long> DepartureTime=new ArrayList<>();
+    List<Long> WaitingTime=new ArrayList<>();
+
     Resources(){
         PlanesQ= new int[6];
         PlanesID= new String[6];
         Gates=new String[3];
-
+        PlaneStatus=new String[6];
         WaitingQueue=new ArrayList<>(6);
         DepartingQueue=new ArrayList<>(6);
+        for (int i = 0; i < 6; i++) {
+            ArrivalTime.add(0L);
+            DepartureTime.add(0L);
+            WaitingTime.add(0L);
+        }
 
-        // Setting the number of planes to  6
+                // Setting the number of planes to  6
     }
 
     // Queues functionalities
     void Add_Planes_Queue(int index){
         WaitingQueue.add(index);
+    }
+    void Handle_Plane_Queue_Emergency(int index){
+        WaitingQueue.remove(Integer.valueOf(index));
+        WaitingQueue.add(0,index);
     }
     void Rem_Planes_Queue(int index){
         WaitingQueue.remove(Integer.valueOf(index));
@@ -79,6 +95,7 @@ public class Resources {
 
             PlanesID[i] = newID;
             PlanesQ[i] = newQueue;
+            PlaneStatus[i]="Started";
         }
     }
 
@@ -126,7 +143,7 @@ public class Resources {
     boolean AllPlainDepart(){
         int count=0;
         for(int i=0; i<PlanesQ.length; i++){
-            if(PlanesQ[i]==-1){
+            if(PlaneStatus[i].equals("Departed")){
                 count++;
             }
         }
@@ -138,8 +155,6 @@ public class Resources {
     }
 
     //Plane Status functionalities
-
-
 
     //Gates Functions
 
@@ -169,6 +184,19 @@ public class Resources {
 
     int getRunwayStatus(){
         return GatewayStatus;
+    }
+
+    //Status Function
+    void setStatus(int index){
+        PlaneStatus[index]="Waiting";
+    }
+
+    void changeStatus(int index, String stat){
+        PlaneStatus[index]=stat;
+    }
+
+    String getStatus(int index){
+        return PlaneStatus[index];
     }
 
 }

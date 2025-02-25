@@ -1,5 +1,8 @@
 package Runway;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Main {
 
         public static void main(String[] args) {
@@ -8,16 +11,13 @@ public class Main {
             Resources shared=new Resources();
             shared.setPlanesInfo();
             Thread[] PlanesThread=new Thread[6];
+
             for(int i=0; i< PlanesThread.length; i++){
                 PlanesThread[i]=new Thread(new Airplane(i, shared), "Thread "+i);
             }
             Thread ATC_Thread=new Thread(new ATC_Control(shared), "ATC_Thread");
             // Confirm that all threads have started
             ATC_Thread.start();
-
-            for (int i = 0; i < PlanesThread.length; i++) {
-                System.out.println("Thread " + i + " state: " + PlanesThread[i].getState());
-            }
 
             for(int i=0; i< PlanesThread.length; i++){
                 try{
@@ -27,6 +27,8 @@ public class Main {
                 }
                 PlanesThread[i].start();
             }
+
+
         }
     }
 
