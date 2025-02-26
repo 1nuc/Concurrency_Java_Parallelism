@@ -49,18 +49,18 @@ public class SanityChecks{
         long minTime = Res.WaitingTime.stream().min(Long::compare).orElse(0L) / 1000; // Convert to sec
         long maxTime = Res.WaitingTime.stream().max(Long::compare).orElse(0L) / 1000; // Convert to sec
         double averageTime = Res.WaitingTime.stream().mapToLong(Long::longValue).average().orElse(0.0) / 1000; // Convert to sec
+        long totalWaitingTime = Res.WaitingTime.stream().mapToLong(Long::longValue).sum() / 1000;
 
         System.out.println("\n\n============STATISTICS==============");
         System.out.println("ATC: All planes have departed. ATC shutting down.\n");
-        System.out.println("Total Passengers Boarded: " + Res.PassengersBoarded);
-        System.out.println("Total Simulation Time: " + totalTime + " sec"); // Updated to sec
         ALlGateEmpty();
         ALlPlanesServed();
+        System.out.println("Total Passengers Boarded: " + Res.PassengersBoarded);
+        System.out.println("Total Simulation Time: " + totalTime + " sec");
+        System.out.println("Total Waiting Time (All Planes): " + totalWaitingTime + " sec");
         System.out.println("Maximum Plane Waiting Time: " + maxTime + " sec");
         System.out.println("Minimum Plane Waiting Time: " + minTime + " sec");
-        System.out.println("Average Plane Waiting Time: " + String.format("%.2f", averageTime) + " sec"); // Formatted to 2 decimal places
-
-
+        System.out.println("Average Plane Waiting Time: " + String.format("%.2f", averageTime) + " sec");
     }
 
 
