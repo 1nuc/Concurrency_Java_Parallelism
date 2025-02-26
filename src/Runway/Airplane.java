@@ -63,13 +63,6 @@ public class Airplane  implements Runnable{
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                for (int i = 0; i < rec.getGates().length; i++) {
-                    if (rec.getGate(i) == null) {
-                        rec.setGate(i, rec.getSpecificPlane(index));
-                        System.out.println(Thread.currentThread().getName() + ": Plane- " + rec.getSpecificPlane(index) + " Assined Gate " + rec.getGateNum(index));
-                        break;
-                    }
-                }
                 rec.Rem_Planes_Queue(index);
                 rec.changeStatus(index, "Landed");
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Landing........");
@@ -112,10 +105,10 @@ public class Airplane  implements Runnable{
                     break;
                 }
             }
+            System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
             rec.semaphore.Release();
             rec.atomicIndex.reset(index);
             rec.changeStatus(index, "Departed");
-            System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
             synchronized (rec.RunwayLock) {
                 rec.setRunwayStatus(0);
                 rec.DepartureTime.set(index, System.currentTimeMillis());

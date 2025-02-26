@@ -42,9 +42,9 @@ public class ATC_Control implements Runnable {
                 }
                 if (EmergencyScenario()) {
                     index=rec.getEmergencyIndex();
-                    rec.atomicIndex.set(index);
                     rec.Handle_Plane_Queue_Emergency(this.index);
-                    System.out.println(Thread.currentThread().getName()+": Plane: "+rec.getSpecificPlane(index)+" requesting for emergency landing");
+                    rec.atomicIndex.set(index);
+                    System.out.println(Thread.currentThread().getName()+": PLANE: "+rec.getSpecificPlane(index)+" REQUESTING FOR EMERGENCY LANDING");
 
                 }
                 if (!rec.WaitingQueue.isEmpty() && rec.WaitingQueue.contains(index)) {
@@ -85,8 +85,15 @@ public class ATC_Control implements Runnable {
             rec.setRunwayStatus(1);
             rec.Plainland(index);
             System.out.println(Thread.currentThread().getName() + ": Available Gates: " + rec.semaphore.availablePermits());
-            System.out.println(Thread.currentThread().getName() + ": Runway is free");
+            System.out.println(Thread.currentThread().getName() + ": Runway is free for plane "+ rec.getSpecificPlane(index)+ " To Land");
             System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain permission to land");
+            for (int i = 0; i < rec.getGates().length; i++) {
+                if (rec.getGate(i) == null) {
+                    rec.setGate(i, rec.getSpecificPlane(index));
+                    System.out.println(Thread.currentThread().getName() + ": Plane- " + rec.getSpecificPlane(index) + " Assigned Gate " + rec.getGateNum(index));
+                    break;
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -121,6 +128,7 @@ public class ATC_Control implements Runnable {
                 return;
             }
             rec.Plaindepart(index);
+            System.out.println(Thread.currentThread().getName() + ": Runway is free for plane "+rec.getSpecificPlane(index)+" to depart");
             System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Obtain access to depart");
             Thread.sleep(500);
 
@@ -134,7 +142,7 @@ public class ATC_Control implements Runnable {
         int DepartedCount=0;
         int LandedCount=0;
         for(int i=0; i <rec.getPlanesID().length; i++){
-            if(rec.getStatus(i).equals("Departed"))DepartedCount++;
+            if(rec.getStatus(i).equals("Departed")||rec.getStatus(i).equals("WaitingToDeparted"))DepartedCount++;
             if(rec.getStatus(i).equals("Landed"))LandedCount++;
             if(rec.getStatus(i).equals("WaitingToLand"))WaitingCount++;
         }
