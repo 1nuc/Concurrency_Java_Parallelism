@@ -2,9 +2,9 @@ package Runway;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Random;
 public class Main {
-
+        private static Random rand=new Random();
         public static void main(String[] args) {
             //Creating six objects for each plane
 
@@ -21,13 +21,12 @@ public class Main {
 
             for(int i=0; i< PlanesThread.length; i++){
                 try{
-                    Thread.sleep(1000);
+                    Thread.sleep(rand.nextInt(2000));
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
                 PlanesThread[i].start();
             }
-
 
         }
     }

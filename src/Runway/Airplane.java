@@ -71,55 +71,57 @@ public class Airplane  implements Runnable{
                     }
                 }
                 rec.Rem_Planes_Queue(index);
-                rec.atomicIndex.reset(index);
                 rec.changeStatus(index, "Landed");
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Landing........");
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Landed Successfully");
                 System.out.println(Thread.currentThread().getName() + ": Plane- " + rec.getSpecificPlane(index) + " docking at Gate " + rec.getGateNum(index));
+                rec.atomicIndex.reset(index);
                 synchronized (rec.RunwayLock){
                     rec.setRunwayStatus(0);
                     rec.RunwayLock.notifyAll();
                 }
                 thread.start();
+
+
         }
 
 
         void departing() {
             try{
                 rec.lock2.lock();
-                while (!rec.DepartingPrem(index)) {
-                    try {
-                        System.out.println(Thread.currentThread().getName() + " Plane: " + rec.getSpecificPlane(index) + " is Waiting for a permission to leave ");
-                        rec.condition2.await();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-                } catch (RuntimeException e) {
-                    throw new RuntimeException(e);
-                }finally{
-                    rec.condition2.signalAll();
-                    rec.lock2.unlock();
-                }
-                rec.Rem_Planes_Departing_Queue(index);
-                for (int i = 0; i < rec.getGates().length; i++) {
-                    if (rec.getGate(i) != null && rec.getGate(i).equals(rec.getSpecificPlane(index))) {
-                        System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Undock from gate "+rec.getGateNum(index));
-                        rec.setGate(i, null);
-                        break;
-                    }
-                }
-                rec.semaphore.Release();
-                rec.atomicIndex.reset(index);
-                rec.changeStatus(index, "Departed");
-                System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
-                synchronized (rec.RunwayLock) {
-                    rec.setRunwayStatus(0);
-                    rec.DepartureTime.set(index, System.currentTimeMillis());
-                    rec.WaitingTime.set(index, rec.DepartureTime.get(index) - rec.ArrivalTime.get(index));
+                rec.changeStatus(index,"WaitingToDepart");
+                System.out.println(Thread.currentThread().getName() + " Plane: " + rec.getSpecificPlane(index) + " is Waiting for a permission to leave ");
+                synchronized (rec.RunwayLock){
                     rec.RunwayLock.notifyAll();
                 }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            } catch (RuntimeException e) {
+                throw new RuntimeException(e);
+            }finally{
+                rec.lock2.unlock();
+            }
+            rec.Rem_Planes_Departing_Queue(index);
+            for (int i = 0; i < rec.getGates().length; i++) {
+                if (rec.getGate(i) != null && rec.getGate(i).equals(rec.getSpecificPlane(index))) {
+                    System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Undock from gate "+rec.getGateNum(index));
+                    rec.setGate(i, null);
+                    break;
+                }
+            }
+            rec.semaphore.Release();
+            rec.atomicIndex.reset(index);
+            rec.changeStatus(index, "Departed");
+            System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Leaving");
+            synchronized (rec.RunwayLock) {
+                rec.setRunwayStatus(0);
+                rec.DepartureTime.set(index, System.currentTimeMillis());
+                rec.WaitingTime.set(index, rec.DepartureTime.get(index) - rec.ArrivalTime.get(index));
+                rec.RunwayLock.notifyAll();
+            }
         }
 
     }

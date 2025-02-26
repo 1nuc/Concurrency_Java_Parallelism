@@ -57,6 +57,13 @@ public class Resources{
         WaitingQueue.remove(Integer.valueOf(index));
     }
 
+    int getEmergencyIndex() {
+        if (!WaitingQueue.isEmpty()) {
+            return WaitingQueue.get(WaitingQueue.size() - 1);
+        }
+        return -1;
+    }
+
     void Add_Planes_Departing_Queue(int index){
         DepartingQueue.add(index);
     }
@@ -102,6 +109,7 @@ public class Resources{
     String[] getPlanesID(){return PlanesID;}
     String getSpecificPlane(int index){return PlanesID[index];}
 
+   // Additional Resources not used yet but might be used in the future
     int[] getPlanesQ(){return PlanesQ;}
 
     int getSpecificPlaneQ(int index){return PlanesQ[index];}

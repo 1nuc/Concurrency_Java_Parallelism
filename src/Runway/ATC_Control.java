@@ -1,5 +1,6 @@
 package Runway;
 
+import java.util.ArrayList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -7,6 +8,8 @@ public class ATC_Control implements Runnable {
     private Resources rec;
     private int index;
     private SanityChecks checks;
+    private long startTime;
+    private long endTime;
     ATC_Control(Resources shared){
         this.rec=shared;
         checks=new SanityChecks(rec);
@@ -14,6 +17,7 @@ public class ATC_Control implements Runnable {
 
     @Override
     public void run() {
+        startTime=System.currentTimeMillis();
         System.out.println("======== ATC Thread Active: Managing Air Traffic =========");
 
         while (!rec.AllPlainDepart()) {
@@ -21,7 +25,7 @@ public class ATC_Control implements Runnable {
                 while ((index = rec.atomicIndex.get()) == -1) {
                     if (rec.WaitingQueue.isEmpty() && rec.DepartingQueue.isEmpty()) {
                         try {
-
+                            if(rec.AllPlainDepart())break;
                             rec.RunwayLock.wait();
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
@@ -32,30 +36,34 @@ public class ATC_Control implements Runnable {
                         rec.atomicIndex.set(this.index);
                     } else {
                         this.index = rec.DepartingQueue.getFirst();
-                        rec.atomicIndex.set(index);
+                        rec.atomicIndex.set(this.index);
+
                     }
                 }
                 if (EmergencyScenario()) {
-                    index=EmergencyHandling();
+                    index=rec.getEmergencyIndex();
                     rec.atomicIndex.set(index);
-                    rec.Handle_Plane_Queue_Emergency(index);
-                    System.out.println("Plane: "+rec.getSpecificPlane(EmergencyHandling())+" requesting for emergency landing");
+                    rec.Handle_Plane_Queue_Emergency(this.index);
+                    System.out.println(Thread.currentThread().getName()+": Plane: "+rec.getSpecificPlane(index)+" requesting for emergency landing");
 
                 }
-                if (!rec.WaitingQueue.isEmpty()) {
-//                    System.out.println(rec.atomicIndex.get());
-//                    System.out.println("The first landing starts 2: "+rec.WaitingQueue);
+                if (!rec.WaitingQueue.isEmpty() && rec.WaitingQueue.contains(index)) {
                     Land_Runway();
                 }
 
-                if (rec.DepartingQueue.isEmpty() && !rec.getStatus(index).equals("WaitingToDepart")) continue;
-                this.index = rec.DepartingQueue.getFirst();
-                rec.atomicIndex.set(index);
-                Depart_Land();
+                if (rec.DepartingQueue.isEmpty()) continue;
+                Integer firstIndex= rec.DepartingQueue.getFirst();
+                if(firstIndex!=null){
+                    this.index=firstIndex;
+                    rec.atomicIndex.set(this.index);
+                    Depart_Land();
+                }
 
             }
         }
-        checks.output();
+        endTime = System.currentTimeMillis();
+        long totalTime = (endTime - startTime) / 1000;
+        checks.output(totalTime);
     }
 
     void Land_Runway() {
@@ -71,7 +79,6 @@ public class ATC_Control implements Runnable {
         }
         try {
             if (rec.LandingPrem(index)) {
-                System.out.println(Thread.currentThread().getName() + ": Runway Occupied");
                 return;
             }
             Thread.sleep(1000);
@@ -101,7 +108,7 @@ public class ATC_Control implements Runnable {
 
 
     void Depart_Land() {
-        while (!runwayfree()) {
+        while (!runwayfree() || !rec.getStatus(index).equals("WaitingToDepart")) {
             try {
                 System.out.println(Thread.currentThread().getName() + ": " + "Plane with ID: " + rec.getSpecificPlane(index) + " Waiting to leave");
                 rec.RunwayLock.wait();
@@ -111,7 +118,6 @@ public class ATC_Control implements Runnable {
         }
         try {
             if(rec.DepartingPrem(index)){
-                System.out.println(Thread.currentThread().getName() + ": Runway Occupied");
                 return;
             }
             rec.Plaindepart(index);
@@ -121,29 +127,6 @@ public class ATC_Control implements Runnable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        rec.lock2.lock();
-        try {
-            rec.condition2.signalAll();
-        } finally {
-            rec.lock2.unlock();
-        }
-    }
-
-
-    int EmergencyHandling() {
-        int WaitingCount=0;
-        int ThirdPlaneIndex=0;
-        int DepartedCount=0;
-        int LandedCount=0;
-        for(int i=0; i <rec.getPlanesID().length; i++){
-            if(rec.getStatus(index).equals("Departed"))DepartedCount++;
-            if(rec.getStatus(index).equals("Landed"))LandedCount++;
-            if(rec.getStatus(index).equals("WaitingToLand"))WaitingCount++;ThirdPlaneIndex=i;
-            if(DepartedCount==1 && LandedCount==2 && WaitingCount==3){
-                return ThirdPlaneIndex;
-            }
-        }
-        return ThirdPlaneIndex;
     }
 
     boolean EmergencyScenario(){

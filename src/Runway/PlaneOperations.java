@@ -112,11 +112,17 @@ public class PlaneOperations extends Airplane implements Runnable {
                throw new RuntimeException(e);
            }
 
-            synchronized (rec.RunwayLock) {
-                rec.Add_Planes_Departing_Queue(index);
-                rec.changeStatus(index, "PassengerEmbarked");
-                rec.RunwayLock.notify();
-            }
+           rec.lock2.lock();
+           rec.Add_Planes_Departing_Queue(index);
+           rec.changeStatus(index, "PassengerEmbarked");
+           try {
+               rec.condition2.signalAll();
+           } catch (Exception e) {
+               throw new RuntimeException(e);
+           }finally {
+               rec.lock2.unlock();
+           }
+
     }
 
     synchronized void resetPassengers(){

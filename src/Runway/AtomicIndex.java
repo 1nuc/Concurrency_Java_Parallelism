@@ -30,8 +30,6 @@ public class AtomicIndex {
          try{
              if(this.value==value){
                  this.value=-1;
-             }else{
-                 System.out.println(value+"not changing");
              }
          }finally{
              lock.unlock();
