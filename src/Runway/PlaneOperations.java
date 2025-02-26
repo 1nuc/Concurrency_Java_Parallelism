@@ -98,7 +98,7 @@ public class PlaneOperations extends Airplane implements Runnable {
     void PassengersAssignment() {
            try {
                Thread.sleep(1000);
-               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Embarking passengers");
+               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to boarding passengers");
            } catch (InterruptedException e) {
                throw new RuntimeException(e);
            }
