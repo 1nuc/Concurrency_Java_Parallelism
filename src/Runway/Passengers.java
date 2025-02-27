@@ -22,8 +22,8 @@ public class Passengers implements Runnable {
                     throw new RuntimeException(e);
                 }
             }
+            System.out.println(Thread.currentThread().getName()+": "+ planeOps.passengers + " Passengers Disembark from the plane: " + rec.getSpecificPlane(index));
             for (int i = 0; i < 50; i++) disembarkedPas();
-            System.out.println(Thread.currentThread().getName() + ": 50 Passengers Disembark from the plane: " + rec.getSpecificPlane(index));
             while (!planeOps.PassengerEmbarked) {
                 try {
                     planeOps.PassengerLock.wait(1000);
@@ -35,7 +35,7 @@ public class Passengers implements Runnable {
                 rec.PassengersBoarded++;
                 embarkedPas();
             }
-            System.out.println(Thread.currentThread().getName() + ": 50 Passengers board to the plane: " + rec.getSpecificPlane(index));
+            System.out.println(Thread.currentThread().getName() +": "+ planeOps.passengers+ " Passengers board to the plane: " + rec.getSpecificPlane(index));
 
         }
     }
