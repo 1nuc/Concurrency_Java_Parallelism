@@ -4,6 +4,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class PlaneOperations extends Airplane implements Runnable {
     private Thread PassangerThread;
+    private Thread RestockingThread;
+    private Thread CleaningThread;
+    private Thread RefuellingThread;
     protected int passengers=50;
     protected Object PassengerLock=new Object();
     protected boolean PassengerdisEmbarked=false;
@@ -14,7 +17,10 @@ public class PlaneOperations extends Airplane implements Runnable {
 
     public void run() {
         try{
-            PassangerThread=new Thread(new Passengers(index, rec, this), "Passengers Thread "+index);
+            RestockingThread=new Thread(new PlanesRestock(index, rec, this), "GTO-Restocking Thread "+index);
+            CleaningThread=new Thread(new PlaneCleaning(index, rec, this), "GTO-Cleaning Thread "+index);
+            RefuellingThread=new Thread(new RefuellingAircraft(index, rec, this), "GTO-Refuelling Thread "+index);
+            PassangerThread=new Thread(new Passengers(index, rec, this), "GTO-Passengers Thread "+index);
             PassangerThread.start();
 
             resetPassengers();
@@ -52,24 +58,24 @@ public class PlaneOperations extends Airplane implements Runnable {
        }
 
     void CleaningAircraft() {
-           try {
-               Thread.sleep(1000);
                System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Aircraft CLeaning");
+           try {
+               CleaningThread.start();
+               Thread.sleep(1000);
            } catch (InterruptedException e) {
                throw new RuntimeException(e);
            }
-           System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" Successfully cleaned");
     }
 
 
     void RefillSupplies() {
+               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Aircraft restocking");
            try {
+               RestockingThread.start();
                Thread.sleep(1000);
-               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Aircraft Replenishment");
            } catch (InterruptedException e) {
                throw new RuntimeException(e);
            }
-           System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" refills supplies successfully");
     }
 
 
@@ -84,9 +90,9 @@ public class PlaneOperations extends Airplane implements Runnable {
         }
            try {
                rec.RefuellingSemaphore.Acquire();
-               Thread.sleep(1000);
                System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Refuelling aircraft");
-               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" refuelled sucessfully");
+               RefuellingThread.start();
+               Thread.sleep(1000);
            } catch (InterruptedException e) {
                throw new RuntimeException(e);
            }finally{

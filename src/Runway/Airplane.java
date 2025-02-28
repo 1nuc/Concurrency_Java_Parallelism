@@ -22,7 +22,7 @@ public class Airplane  implements Runnable{
                 rec.ArrivalTime.set(index, System.currentTimeMillis());
                 rec.RunwayLock.notifyAll();
             }
-            thread = new Thread(new PlaneOperations(index, rec), "Thread " + index + "-Planes Operation");
+            thread = new Thread(new PlaneOperations(index, rec), "Thread " + "GTO-Operations " +index );
             landing();
             rec.lock2.lock();
             try {
