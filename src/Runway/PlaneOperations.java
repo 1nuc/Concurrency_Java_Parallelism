@@ -42,7 +42,7 @@ public class PlaneOperations extends Airplane implements Runnable {
        void PassengersDisembarking() {
            try {
                Thread.sleep(1000);
-               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to disembarking passengers");
+               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " permitted passengers to disembark");
            } catch (InterruptedException e) {
                throw new RuntimeException(e);
            }
@@ -58,7 +58,7 @@ public class PlaneOperations extends Airplane implements Runnable {
        }
 
     void CleaningAircraft() {
-               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Aircraft CLeaning");
+               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Started CLeaning");
            try {
                CleaningThread.start();
                Thread.sleep(1000);
@@ -69,7 +69,7 @@ public class PlaneOperations extends Airplane implements Runnable {
 
 
     void RefillSupplies() {
-               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Aircraft restocking");
+               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Started restocking supplies");
            try {
                RestockingThread.start();
                Thread.sleep(1000);
@@ -90,7 +90,7 @@ public class PlaneOperations extends Airplane implements Runnable {
         }
            try {
                rec.RefuellingSemaphore.Acquire();
-               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Moves to Refuelling aircraft");
+               System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index) + " Granted permission to Refuel");
                RefuellingThread.start();
                Thread.sleep(1000);
            } catch (InterruptedException e) {

@@ -13,7 +13,7 @@ public class PlanesRestock implements Runnable{
 
     @Override
     public void run() {
-        System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" refills supplies successfully");
+        System.out.println(Thread.currentThread().getName() + ": Plane-" + rec.getSpecificPlane(index)+" Supplies restocked successfully");
 
     }
 }
